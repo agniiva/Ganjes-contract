@@ -1,53 +1,69 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/finance/VestingWallet.sol";
 
+contract GANJESVesting is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
-contract GANJESVesting is Ownable {
-    using SafeMath for uint256;
+    IERC20 public token;
 
-    GANJESToken public token;
-    
-    // Vesting details in minutes for testing purposes
+    // Vesting details in seconds for production, you can switch it back to minutes for testing
     uint256 public constant CLIFF_DURATION = 1 minutes;
-    uint256 public constant VESTING_DURATION = 4 minutes;
-    
-    // Addresses of the beneficiaries
+    uint64 public constant VESTING_DURATION = 4 minutes;
+    //address private owner;
     address public teamAndAdvisors;
     address public earlyBackers;
-    
-    // Vesting start time
-    uint256 public vestingStartTime;
 
-    // Amount of tokens vested
-    mapping(address => uint256) public vestedAmount;
+    VestingWallet public teamAndAdvisorsVesting;
+    VestingWallet public earlyBackersVesting;
 
-    constructor(address _token, address _teamAndAdvisors, address _earlyBackers) {
-        token = GANJESToken(_token);
+    constructor(address _token, address _teamAndAdvisors, address _earlyBackers)
+        Ownable(msg.sender)
+        ReentrancyGuard()
+    {
+        token = IERC20(_token);
         teamAndAdvisors = _teamAndAdvisors;
         earlyBackers = _earlyBackers;
     }
-    
+
     function startVesting() external onlyOwner {
-        vestingStartTime = block.timestamp;
+        teamAndAdvisorsVesting = new VestingWallet(
+            teamAndAdvisors,
+            block.timestamp,
+            VESTING_DURATION
+        );
+
+        earlyBackersVesting = new VestingWallet(
+            earlyBackers,
+            block.timestamp,
+            VESTING_DURATION
+        );
     }
 
-    function claim() external {
-        require(block.timestamp > vestingStartTime, "Vesting hasn't started yet");
-        
+    function release() external {
         if (msg.sender == teamAndAdvisors) {
-            require(block.timestamp > vestingStartTime + CLIFF_DURATION, "Cliff period not reached");
-            
-            uint256 elapsedTime = block.timestamp - (vestingStartTime + CLIFF_DURATION);
-            uint256 claimableAmount = token.balanceOf(address(this)).mul(elapsedTime).div(VESTING_DURATION);
-            
-            vestedAmount[teamAndAdvisors] = vestedAmount[teamAndAdvisors].add(claimableAmount);
-            token.transfer(teamAndAdvisors, claimableAmount);
-            
+            teamAndAdvisorsVesting.release();
         } else if (msg.sender == earlyBackers) {
-            require(block.timestamp > vestingStartTime + CLIFF_DURATION, "1-minute lockup not reached");
-            uint256 backersAmount = token.balanceOf(address(this));
-            vestedAmount[earlyBackers] = vestedAmount[earlyBackers].add(backersAmount);
-            token.transfer(earlyBackers, backersAmount);
+            earlyBackersVesting.release();
+        } else {
+            revert("Not eligible to claim");
         }
+    }
+
+    function vestingStartTime() external view returns (uint256 teamStartTime, uint256 backersStartTime) {
+        teamStartTime = teamAndAdvisorsVesting.start();
+        backersStartTime = earlyBackersVesting.start();
+    }
+
+    function fundVestingContracts(uint256 teamAmount, uint256 backersAmount) external onlyOwner {
+        require(teamAmount > 0 && backersAmount > 0, "Funding amount must be greater than 0");
+        token.safeTransfer(address(teamAndAdvisorsVesting), teamAmount);
+        token.safeTransfer(address(earlyBackersVesting), backersAmount);
     }
 }

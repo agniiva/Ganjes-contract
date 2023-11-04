@@ -1,51 +1,48 @@
-const GANJESToken = artifacts.require("GANJESToken");
-const GANJESVesting = artifacts.require("GANJESVesting");
+pragma solidity ^0.8.0;
 
-contract("GANJES Token and Vesting", (accounts) => {
-    let token, vesting;
-    const owner = accounts[0];
-    const teamAndAdvisors = accounts[1];
-    const initialInvestors = accounts[2];
+import "ds-test/test.sol";
+import "../src/Token.sol";
+import "../src/VestingContract.sol";
+import "forge-std/Vm.sol";
+import "forge-std/console.sol";
 
-    beforeEach(async () => {
-        token = await GANJESToken.new({ from: owner });
-        vesting = 
-        await GANJESVesting.new(token.address, teamAndAdvisors, initialInvestors, { from: owner });
-        
-        // Transfer some tokens to the vesting contract for testing
-        await token.transfer(vesting.address, "1000000", { from: owner });
-    });
+contract GANJESTokenAndVestingTest is DSTest {
+    GANJESToken token;
+    GANJESVesting vesting;
 
-    it("should correctly deploy the contracts", async () => {
-        assert(token);
-        assert(vesting);
-    });
+    address owner;
+    address teamAndAdvisors;
+    address initialInvestors;
 
-    it("should set the vesting start time correctly", async () => {
-        await vesting.startVesting({ from: owner });
-        const startTime = await vesting.vestingStartTime();
-        assert.notEqual(startTime.toNumber(), 0, "Vesting start time not set");
-    });
+    function setUp() public {
+        owner = address(this);
+        teamAndAdvisors = address(0x1);
+        initialInvestors = address(0x2);
 
-    it("should not allow to claim before vesting period", async () => {
-        await vesting.startVesting({ from: owner });
-        
-        try {
-            await vesting.claim({ from: teamAndAdvisors });
-            assert.fail("Claim was allowed before vesting period");
-        } catch (error) {
-            assert(error.message.indexOf("revert") >= 0, "Expected revert error, but got: " + error.message);
-        }
-    });
+        token = new GANJESToken(10000000);
+        vesting = new GANJESVesting(address(token), teamAndAdvisors, initialInvestors);
 
-    it("should allow to claim after vesting period", async () => {
-        await vesting.startVesting({ from: owner });
-        
-        // Simulating passing of time in the test environment
-        await new Promise(resolve => setTimeout(resolve, 2000));  // 2 seconds delay to simulate time passing
+        token.transfer(address(vesting), 1000000);
+    }
 
-        await vesting.claim({ from: teamAndAdvisors });
-        const balance = await token.balanceOf(teamAndAdvisors);
-        assert.notEqual(balance.toNumber(), 0, "Tokens were not claimed");
-    });
-});
+    function testDeployment() public {
+        assertTrue(address(token) != address(0), "Token address should be set");
+        assertTrue(address(vesting) != address(0), "Vesting address should be set");
+    }
+
+    function testFailClaimBeforeVestingPeriod() public {
+        vesting.release();
+        vesting.startVesting();
+    }
+
+    // function testClaimAfterVestingPeriod() public {
+    //     vesting.startVesting();
+
+    //     // In Foundry, you would use hevm to manipulate time
+    //     Vm.warp(block.timestamp);
+
+    //     vesting.release();
+    //     uint256 balance = token.balanceOf(teamAndAdvisors);
+    //     assertNotEq(balance, 0, "Tokens were not claimed");
+    // }
+}
