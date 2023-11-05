@@ -33,16 +33,7 @@ contract GANJESTokenAndVestingTest is DSTest {
     function testFailClaimBeforeVestingPeriod() public {
         vesting.release();
         vesting.startVesting();
+        
     }
 
-    // function testClaimAfterVestingPeriod() public {
-    //     vesting.startVesting();
-
-    //     // In Foundry, you would use hevm to manipulate time
-    //     Vm.warp(block.timestamp);
-
-    //     vesting.release();
-    //     uint256 balance = token.balanceOf(teamAndAdvisors);
-    //     assertNotEq(balance, 0, "Tokens were not claimed");
-    // }
 }
