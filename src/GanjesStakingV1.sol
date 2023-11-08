@@ -7,8 +7,6 @@ contract GANJESStaking is Ownable(msg.sender) {
     // using SafeMath for uint256;
 
     GANJESToken public token;
-    uint256 public minAPR;
-        uint256 public maxAPR;
 
     struct Stake {
         uint256 amount;
@@ -16,10 +14,10 @@ contract GANJESStaking is Ownable(msg.sender) {
     }
 
     mapping(address => Stake) public stakes;
-    function initialize(GANJESToken _token, uint256 _minAPR, uint256 _maxAPR) external {
+    function initialize(GANJESToken _token) external {
             token = _token;
-            minAPR = _minAPR;
-            maxAPR = _maxAPR;
+            // minAPR is now inherited from GANJESStakingProxy and should not be re-initialized here
+            // maxAPR is now inherited from GANJESStakingProxy and should not be re-initialized here
     }
 
     function stake(uint256 _amount) external {
@@ -33,7 +31,7 @@ contract GANJESStaking is Ownable(msg.sender) {
         stakes[msg.sender] = newStake;
     }
 
-    function calculateReward(address _staker) public view returns (uint256) {
+    function calculateReward(address _staker,uint256 _minAPR, uint256 _maxAPR) public view returns (uint256) {
         Stake memory userStake = stakes[_staker];
         require(userStake.amount > 0, "No stake found");
 
@@ -41,23 +39,19 @@ contract GANJESStaking is Ownable(msg.sender) {
         uint256 stakingDays = stakingDuration / (1 days);
 
         // Simplified linear reward calculation
-        uint256 rewardRate = 15 + stakingDays*20/365;// Linear increase from 15% to 35% over a year
-        rewardRate = rewardRate > 35 ? 35 : rewardRate; // Cap at 35%
+        uint256 rewardRate = _minAPR + stakingDays*20/365;// Linear increase from 15% to 35% over a year
+        rewardRate = rewardRate > 40 ? _maxAPR : rewardRate; // Cap at 35%
 
         uint256 reward = (userStake.amount * rewardRate) / 100;
         return reward;
     }
 
-       function setAPRRange(uint256 _minAPR, uint256 _maxAPR) public onlyOwner {
-            require(_minAPR <= _maxAPR, "Minimum APR should be less than or equal to Maximum APR");
-            minAPR = _minAPR;
-            maxAPR = _maxAPR;
-       } 
-    function unstake() external {
+    
+    function unstake(uint256 minApr, uint256 maxApr ) external {
         Stake memory userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No stake found");
 
-        uint256 reward = calculateReward(msg.sender);
+        uint256 reward = calculateReward(msg.sender,minApr,maxApr);
 
         // Transfer the staked amount and reward back to the staker
         token.transfer(msg.sender, userStake.amount + reward);

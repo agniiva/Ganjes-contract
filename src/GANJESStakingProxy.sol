@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "./GanjesStakingV1.sol";
 
-contract GANJESStakingProxy is TransparentUpgradeableProxy {
+contract GANJESStakingProxy is TransparentUpgradeableProxy,Ownable(msg.sender) {
         uint256 public minAPR;
         uint256 public maxAPR;
         address public admin;
@@ -15,7 +15,7 @@ contract GANJESStakingProxy is TransparentUpgradeableProxy {
         maxAPR = _maxAPRValue;
    }
     
-        function setAPRRange(uint256 _minAPR, uint256 _maxAPR) external {
+        function setAPRRange(uint256 _minAPR, uint256 _maxAPR) external onlyOwner {
             require(msg.sender == admin, "Only admin can set APR range");
             minAPR = _minAPR;
             maxAPR = _maxAPR;

@@ -9,21 +9,32 @@ contract GanjesStakingV1Test is DSTest {
     GANJESStaking public staking;
     GANJESToken public token;
 
-    function beforeEach(GANJESToken _token, address _admin, uint256 _minAPR, uint256 _maxAPR) public {
-        stakingProxy = new GANJESStakingProxy(address(staking), _admin, _token, _minAPR, _maxAPR);
+   function beforeEach() public {
+        
+        address _admin = msg.sender;
+     token = new GANJESToken(100000); // Assigning the contract creator as admin
+        uint256 _minAPR = 100; // Static value for minimum APR
+        uint256 _maxAPR = 200; // Static value for maximum APR
+
+        staking = new GANJESStaking();
+        stakingProxy = new GANJESStakingProxy(address(staking), _admin, token, _minAPR, _maxAPR);
         staking = GANJESStaking(address(stakingProxy));
-        token = _token;
+        // token = _token;
     }
 
-    function testInitializationThroughProxy() public {
+    function testInitializationThroughProxy() public view {
         assert(address(staking) == address(stakingProxy));
     }
         // Test that the staking contract is initialized using the proxy
     
 
     function testParametersFromProxy() public {
-        assert(staking.minAPR() == stakingProxy.minAPR());
-        assert(staking.maxAPR() == stakingProxy.maxAPR());
+    //   staking = GANJESStaking(address(stakingProxy));
+                uint256 newMinAPR = 5;
+                uint256 newMaxAPR = 10;
+                stakingProxy.setAPRRange(newMinAPR, newMaxAPR);
+                assert(stakingProxy.minAPR() == newMinAPR);
+                assert(stakingProxy.maxAPR() == newMaxAPR);
     }
         // Test that parameters stored inside GanjesStakingProxy are only being used inside GanjesStakingV1
 }
