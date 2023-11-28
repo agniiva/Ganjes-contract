@@ -1,29 +1,34 @@
-
 pragma solidity ^0.8.0;
 
 import "../src/VestingContract.sol";
 import "../src/Token.sol";
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
-contract VestingContractTest {
-
+contract VestingContractTest is Test {
+    address private owner;
     GANJESVesting vesting;
     GANJESToken token;
 
-    function beforeEach(address _token, address _teamAndAdvisors, address _earlyBackers) public {
-        vesting = new GANJESVesting(_token, _teamAndAdvisors, _earlyBackers);
-        token = GANJESToken(_token);
+    function setUp() public {
+        token = new GANJESToken(100000);
+
+        vesting = new GANJESVesting(address(token));
+        
+        owner = msg.sender;
     }
 
     function testInitialization() public {
-        assert(address(vesting.token()) == address(token));
+    //     // console.log(string(vesting.address()));
+        assertEq(address(vesting.token()), address(token));
     }
 
     function testVestingStart() public {
         vesting.startVesting();
-        uint256 startTime; uint256 endTime;
-(startTime, endTime) = vesting.vestingStartTime();
-assert(startTime != 0);
+        uint256 startTime;
+        uint256 endTime;
+        (startTime, endTime) = vesting.vestingStartTime();
+        assert(startTime != 0);
     }
 
     function testRelease() public {
@@ -33,22 +38,18 @@ assert(startTime != 0);
         } catch {
             // Expected revert
         }
-
     }
-    
 
     function testFunding() public {
         uint256 initialBalance = token.balanceOf(address(vesting));
-        uint256 amount = 1000 * 10**18; // Example amount
+        uint256 amount = 1000 * 10 ** 18; // Example amount
         token.transfer(address(vesting), amount);
         assert(token.balanceOf(address(vesting)) == initialBalance + amount);
     }
 
-    function invariants() public {
-        uint256 initialBalance = token.balanceOf(address(vesting));
+    function testInvariants(address vestingMock) public view {
+        uint256 initialBalance = token.balanceOf(address(vestingMock));
         // The total amount of tokens in the VestingWallet contracts should never exceed the initial funding amount
-        assert(token.balanceOf(address(vesting)) <= initialBalance);
-
+        assert(token.balanceOf(address(vestingMock)) <= initialBalance);
     }
-
 }

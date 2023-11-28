@@ -16,31 +16,29 @@ contract GANJESVesting is Ownable, ReentrancyGuard {
     // Vesting details in seconds for production, you can switch it back to minutes for testing
     uint256 public constant CLIFF_DURATION = 1 minutes;
     uint64 public constant VESTING_DURATION = 4 minutes;
-    //address private owner;
+    // address private owner;
     address public teamAndAdvisors;
     address public earlyBackers;
 
     VestingWallet public teamAndAdvisorsVesting;
     VestingWallet public earlyBackersVesting;
 
-    constructor(address _token, address _teamAndAdvisors, address _earlyBackers)
+    constructor(address _token)
         Ownable(msg.sender)
         ReentrancyGuard()
     {
         token = IERC20(_token);
-        teamAndAdvisors = _teamAndAdvisors;
-        earlyBackers = _earlyBackers;
     }
 
     function startVesting() external onlyOwner {
         teamAndAdvisorsVesting = new VestingWallet(
-            teamAndAdvisors,
+            msg.sender,
             block.timestamp,
             VESTING_DURATION
         );
 
         earlyBackersVesting = new VestingWallet(
-            earlyBackers,
+           msg.sender,
             block.timestamp,
             VESTING_DURATION
         );

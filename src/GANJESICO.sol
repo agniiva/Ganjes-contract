@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 import "./Token.sol";
 
 contract GANJESICO {
-
     GANJESToken public token;
     address public admin;
     uint256 public tokenPrice;
@@ -34,5 +33,4 @@ contract GANJESICO {
         require(msg.sender == admin, "Only the admin can end the sale");
         require(token.transfer(admin, token.balanceOf(address(this))), "Unable to transfer tokens to admin");
     }
-
 }

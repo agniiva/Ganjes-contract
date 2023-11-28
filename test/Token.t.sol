@@ -1,12 +1,12 @@
 pragma solidity ^0.8.0;
 
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 import "../src/Token.sol";
 import "../src/VestingContract.sol";
 import "forge-std/Vm.sol";
 import "forge-std/console.sol";
 
-contract GANJESTokenAndVestingTest is DSTest {
+contract GANJESTokenAndVestingTest is Test {
     GANJESToken token;
     GANJESVesting vesting;
 
@@ -20,7 +20,7 @@ contract GANJESTokenAndVestingTest is DSTest {
         initialInvestors = address(0x2);
 
         token = new GANJESToken(10000000);
-        vesting = new GANJESVesting(address(token), teamAndAdvisors, initialInvestors);
+        vesting = new GANJESVesting(address(token));
 
         token.transfer(address(vesting), 1000000);
     }
@@ -33,7 +33,5 @@ contract GANJESTokenAndVestingTest is DSTest {
     function testFailClaimBeforeVestingPeriod() public {
         vesting.release();
         vesting.startVesting();
-        
     }
-
 }
