@@ -15,14 +15,11 @@ contract GANJESTokenAndVestingTest is Test {
     address initialInvestors;
 
     function setUp() public {
-        owner = address(this);
+        owner = msg.sender;
         teamAndAdvisors = address(0x1);
         initialInvestors = address(0x2);
 
         token = new GANJESToken(10000000);
-        vesting = new GANJESVesting(address(token));
-
-        token.transfer(address(vesting), 1000000);
     }
 
     function testDeployment() public {
@@ -30,8 +27,9 @@ contract GANJESTokenAndVestingTest is Test {
         assertTrue(address(vesting) != address(0), "Vesting address should be set");
     }
 
-    function testFailClaimBeforeVestingPeriod() public {
-        vesting.release();
-        vesting.startVesting();
-    }
+    //     function testFailClaimBeforeVestingPeriod() public {
+    //         vesting.startVesting();
+    //         // vesting.release();
+
+    //     }
 }

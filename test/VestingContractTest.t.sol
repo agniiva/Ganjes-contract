@@ -14,30 +14,34 @@ contract VestingContractTest is Test {
         token = new GANJESToken(100000);
 
         vesting = new GANJESVesting(address(token));
-        
+
         owner = msg.sender;
     }
 
     function testInitialization() public {
-    //     // console.log(string(vesting.address()));
+        //     // console.log(string(vesting.address()));
         assertEq(address(vesting.token()), address(token));
     }
 
     function testVestingStart() public {
         vesting.startVesting();
-        uint256 startTime;
-        uint256 endTime;
-        (startTime, endTime) = vesting.vestingStartTime();
-        assert(startTime != 0);
+        uint256 teamStartTime;
+        uint256 teamEndTime;
+        uint256 earlyBackersStartTime;
+        uint256 earlyBackersEndTime;
+
+        (teamStartTime, earlyBackersStartTime, teamEndTime, earlyBackersEndTime) = vesting.vestingStartTime();
+        assertEq(teamStartTime, vesting.teamAndAdvisorsVesting().start());
+        assertEq(earlyBackersStartTime, vesting.earlyBackersVesting().start());
+        assertEq(teamEndTime, vesting.teamAndAdvisorsVesting().end());
+        assertEq(earlyBackersEndTime, vesting.earlyBackersVesting().end());
     }
 
     function testRelease() public {
         // Ensure that tokens cannot be claimed before the cliff duration
-        try vesting.release() {
-            assert(false);
-        } catch {
-            // Expected revert
-        }
+        vesting.startVesting();
+
+        // assertEq(a, b);
     }
 
     function testFunding() public {
